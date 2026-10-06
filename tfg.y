@@ -16,8 +16,147 @@
 %}
 
 %%
-	// ETDS
-	S : _main;
+	S 			: FVM
+				;
+
+	FVM 		: 	DVar 
+					FVM
+
+ 				| 	_int 
+					_main 
+					_pari 
+					_pard 
+					Bloque
+				;
+
+	Tipo 		: 	_int
+
+ 				| 	_float
+				;
+
+	Bloque 		: 	_llavei 
+					BDecl 
+					SeqInstr 
+					_llaved
+				;
+
+	BDecl 		: 	BDecl 
+					DVar
+
+		 		| 	%empty
+				;
+
+	DVar 		: 	Tipo 
+					LIdent 
+					_pyc
+				;
+
+	LIdent 		: 	LIdent 
+					_coma 
+					Variable
+	
+	 			| 	Variable
+				;
+
+	Variable 	: 	_id
+					V
+				;
+
+	V 			: 	%empty
+				
+				| 	_cori
+					_nentero
+					_cord
+					V
+				;
+
+	SeqInstr 	: 	SeqInstr
+					Instr
+
+				| 	%empty
+				;
+
+	Instr 		: 	_pyc
+				
+				| 	Bloque
+
+				| 	Ref
+					_asig
+					Expr
+					_pyc
+
+				| 	_printf
+					_pari
+					_formato
+					_coma
+					Expr
+					_pard
+					_pyc
+
+				| 	_scanf
+					_pari
+					_formato
+					_coma
+					Ref
+					_pard
+					_pyc
+
+				| 	_if
+					_pari
+					Expr
+					_pard
+					Instr
+
+				| 	_if
+					_pari
+					Expr
+					_pard
+					Instr
+					_else
+					Instr
+	
+				;
+
+	Expr 		: 	Expr
+					_oprel
+					Esimple
+
+				| 	Esimple
+				;
+
+	Esimple 	: 	Esimple
+					_opas
+					Term
+
+				| 	Term
+				;
+	
+	Term 		: 	Term	
+					_opmd
+					Factor
+
+				| 	Factor
+				;
+
+	Factor		: 	Ref
+				
+				| 	_nentero
+
+				| 	_nreal
+
+				| 	_pari
+					Expr
+					_pard
+
+				;
+
+	Ref 		: 	_id
+				| 	Ref
+					_cori
+					Esimple
+					_cord
+				;
+
 %%
 
 int yyerror(char *s)
