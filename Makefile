@@ -1,10 +1,10 @@
-OPTS=-Wall -g -Wno-write-strings -Wno-unused-function -Wno-sign-compare -std=c++11
+OPTS=-Wall -g -Wno-write-strings -Wno-unused-function -Wno-sign-compare -std=c++11 -Wno-free-nonheap-object
 OBJS=lex.yy.o tfg.tab.o #TablaSimbolos.o TablaTipos.o VariablesMemoria.o
 CC=g++
 TAR = tar -cvzf
 
 tfg: $(OBJS)
-	$(CC) $(OPTS) $(OBJS) -o tfg
+	$(CC) $(OPTS) $(OBJS) -o tfg.exe
 
 lex.yy.o: lex.yy.c comun.h tfg.tab.h
 	$(CC) $(OPTS) -c lex.yy.c
@@ -32,4 +32,4 @@ entrega:
 clean:
 	rm -f $(OBJS)
 	rm -f tfg.tab.c tfg.tab.h lex.yy.c
-	rm -f tfg
+	rm -f tfg.exe

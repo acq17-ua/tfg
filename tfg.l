@@ -62,7 +62,7 @@ LD 	[0-9a-zA-Z]
 .		{ 	yylval.col = col;
 			yylval.row = row;
 			yylval.lex = strdup(yytext);
-			msgError(ERR::LEXICO, yylval); }
+			msgError(ERR::LEXICO, &yylval); }
 
 %%
 
@@ -81,21 +81,23 @@ int ret(int token, string s)
 	return token;
 }
 
-void msgError(ERR nerror,int nlin,int ncol,const char *s) {
 
+void msgError(const ERR nerror, const unsigned row, const unsigned col, const string lex) 
+{
 	switch(nerror)
 	{
 		case ERR::LEXICO:
 			fprintf(stderr, "Lexic error at [%d, %d] -- Unexpected character '%s'\n", 
-					culprit.row, 
-					culprit.col, 
-					culprit.lex.c_str());
+					row, 
+					col, 
+					lex.c_str());
 			break;
 
 		case ERR::SINT:
-			fprintf(stderr, "Semantic error at [%d, %d] -- ", 
-					culprit.row, 
-					culprit.col);
+			fprintf(stderr, "Syntax error at [%d, %d] -- Unexpected token '%s'\n", 
+					row, 
+					col,
+					lex.c_str());
 			break;
 
 		case ERR::EOF_:
@@ -103,7 +105,9 @@ void msgError(ERR nerror,int nlin,int ncol,const char *s) {
 			break;
 
 		default:
-			fprintf(stderr, "Semantic error at: [%d, %d] -- ", culprit.row, culprit.col);
+			fprintf(stderr, "Semantic error at: [%d, %d] -- ", 
+					row, 
+					col);
 			break;
 	}
 
@@ -111,21 +115,21 @@ void msgError(ERR nerror,int nlin,int ncol,const char *s) {
 	{
 		case ERR::YADECL:
 			fprintf(stderr, "Symbol '%s' was declared twice.\n", 
-					culprit.lex.c_str());
+					lex.c_str());
 			break;
 
 		case ERR::NODECL:
 			fprintf(stderr, "Symbol '%s' used before declaration.\n", 
-					culprit.lex.c_str());
+					lex.c_str());
 			break;
 
 		case ERR::DIM:
-			fprintf(stderr, "Array access requires a positive index.\n"); 
+			fprintf(stderr, "Array access requires a positive index.\n");
 			break;
 
 		case ERR::OUTOFMEMORY:
 			fprintf(stderr, "Out of memory for variable %s.\n", 
-					culprit.lex.c_str());
+					lex.c_str());
 			break;
 
 		case ERR::TOOMANY:
@@ -146,16 +150,22 @@ void msgError(ERR nerror,int nlin,int ncol,const char *s) {
 
 		case ERR::TYPES:
 			fprintf(stderr, "Incompatible types provided for operation led by '%s'\n",
-					culprit.lex.c_str());
+					lex.c_str());
 			break;
 
 		case ERR::MAXTMP:
 			fprintf(stderr, "Out of memory por temps.\n");
+			break;
+
+		default:
+			fprintf(stderr, "Impossible error '%d' was thrown. Please contact the police.", nerror);
 			break;
 	}
 
 }
 
 
-void msgError(ERR nerror) { return; }
-void msgError(ERR nerror, const TOKEN culprit) { return; }
+void msgError(const ERR nerror, const TOKEN* culprit ) 
+{
+	msgError( nerror, culprit->row, culprit->col, culprit->lex );
+}

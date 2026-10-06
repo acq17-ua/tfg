@@ -24,14 +24,14 @@ int yyerror(char *s)
 {
 	if (eof) 
 	{
-		msgError(ERR::_EOF);
+		msgError(ERR::EOF_, NULL);
 	}
 	else
 	{  
-		yylval.ncol = col - strlen(yytext);
-		yylval.nlin = row;
-		yylval.lexema = strdup(yytext);
-		msgError(ERR::SINT, yylval);
+		yylval.col = col - strlen(yytext);
+		yylval.row = row;
+		yylval.lex = strdup(yytext);
+		msgError(ERR::SINT, &yylval);
 	}
 	return 0;
 }

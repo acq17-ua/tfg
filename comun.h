@@ -31,9 +31,8 @@ typedef struct {
 
 #define YYSTYPE TOKEN
 
-void msgError(ERR nerror);
-void msgError(ERR nerror, const TOKEN culprit);
-void msgError(ERR nerror,int row,int col,const char *s);
+void msgError(const ERR, const TOKEN*);
+void msgError(const ERR, const unsigned, const unsigned, const string);
 
 
 
