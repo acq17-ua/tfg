@@ -3,6 +3,9 @@
 %token _opeq _oprel _opas _opmd _asig _ref _cori _cord _llavei _llaved
 %token _format _incrdecr
 
+%nonassoc _ifx
+%nonassoc _else
+
 %{
 	#include "comun.h"
 
@@ -43,7 +46,7 @@
 	BDecl 		: 	BDecl 
 					DVar
 
-		 		| 	%empty
+		 		| 	/* empty */
 				;
 
 	DVar 		: 	Tipo 
@@ -62,7 +65,7 @@
 					V
 				;
 
-	V 			: 	%empty
+	V 			: 	/* empty */
 				
 				| 	_cori
 					_nentero
@@ -73,7 +76,7 @@
 	SeqInstr 	: 	SeqInstr
 					Instr
 
-				| 	%empty
+				| 	/* empty */
 				;
 
 	Instr 		: 	_pyc
@@ -87,7 +90,7 @@
 
 				| 	_printf
 					_pari
-					_formato
+					_format
 					_coma
 					Expr
 					_pard
@@ -95,7 +98,7 @@
 
 				| 	_scanf
 					_pari
-					_formato
+					_format
 					_coma
 					Ref
 					_pard
@@ -106,6 +109,7 @@
 					Expr
 					_pard
 					Instr
+					%prec _ifx
 
 				| 	_if
 					_pari
@@ -114,6 +118,7 @@
 					Instr
 					_else
 					Instr
+					
 	
 				;
 

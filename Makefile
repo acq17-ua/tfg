@@ -24,7 +24,7 @@ lex.yy.c : tfg.l comun.h
 	flex tfg.l
 	
 tfg.tab.c tfg.tab.h: tfg.y lex.yy.c comun.h #TablaSimbolos.h TablaTipos.h VariablesMemoria.h
-	bison -d tfg.y	
+	bison -d -Wcounterexamples tfg.y	
 
 entrega:
 	$(TAR) tfg.tgz Makefile tfg.l tfg.y comun.h TablaSimbolos.h TablaSimbolos.cc TablaTipos.h TablaTipos.cc VariablesMemoria.h VariablesMemoria.cc 
