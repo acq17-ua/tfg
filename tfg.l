@@ -29,9 +29,9 @@ LD 	[0-9a-zA-Z]
 "while" 	{ return ret(_while); }
 "for" 		{ return ret(_for); }
 
-"[A-Za-z][0-9A-Za-z]*" 	{ return ret(_id); }
-"[0-9]+" 				{ return ret(_nentero); }
-"([0-9]+)"."([0-9]+)" 	{ return ret(_nreal); }
+{L}({LD})* 		{ return ret(_id); }
+{D}*			{ return ret(_nentero); }
+{D}+(\.){D}+ 	{ return ret(_nreal); }
 
 "," 	{ return ret(_coma); }
 ";" 	{ return ret(_pyc); }
@@ -70,13 +70,17 @@ int yywrap(void) { eof=1; return 1; }
 
 int ret(int token, string s)
 {
+	string token_types[] = { "_main", "_int", "_float", "_printf", "_scanf", "_if", "_else", "_while", "_for", 
+							"_id", "_nentero", "_nreal", "_coma", "_pyc", "_pari", "_pard", "_opeq" ,"_oprel", 
+							"_opas", "_opmd", "_asig", "_ref", "_cori", "_cord", "_llavei", "_llaved", "_format", "_incrdecr"};
+
 	yylval.lex = strdup(yytext);
 	yylval.row = row;
 	yylval.col = col;
 	col += (strlen(yytext));
 	yylval.cod = s;
 
-	//cout << yylval.lexema << "(" << yylval.nlin << "," << yylval.ncol << ")\n";
+	cout << "  |  " << token_types[token-(int)_main] << " - \"" << yylval.lex << "\" (" << yylval.row << "," << yylval.col << ")\n";
 
 	return token;
 }
@@ -91,18 +95,18 @@ void msgError(const ERR nerror, const unsigned row, const unsigned col, const st
 					row, 
 					col, 
 					lex.c_str());
-			break;
+			return;
 
 		case ERR::SINT:
 			fprintf(stderr, "Syntax error at [%d, %d] -- Unexpected token '%s'\n", 
 					row, 
 					col,
 					lex.c_str());
-			break;
+			return;
 
 		case ERR::EOF_:
 			fprintf(stderr, "Lexic error -- Unexpected end of file.\n");
-			break;
+			return;
 
 		default:
 			fprintf(stderr, "Semantic error at: [%d, %d] -- ", 
@@ -158,7 +162,7 @@ void msgError(const ERR nerror, const unsigned row, const unsigned col, const st
 			break;
 
 		default:
-			fprintf(stderr, "Impossible error '%d' was thrown. Please contact the police.", nerror);
+			fprintf(stderr, "Impossible error '%d' was thrown. Please contact the police.\n", nerror);
 			break;
 	}
 
