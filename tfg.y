@@ -16,19 +16,29 @@
 	extern char* yytext;
 	extern FILE* yyin;
 
+	enum DVAR_LOCATION
+	{
+		out_function,
+		in_function
+	};
+
 %}
 
 %%
-	S 			: 	FVM
+	S 			: 	{
+						$$.type = DVAR_LOCATION::out_function;
+					}
+					FVM
 					{
-						$$.cod = $1.cod;
+						$$.cod = $2.cod;
+						fprintf(stderr, "\n--------\nTRANSLATION\n--------\n%s", $$.cod.c_str());
 					}
 				;
 
 	FVM 		: 	DVar 
 					FVM
 					{
-						/* TODO que hago con las declaraciones fuera de funciones */
+						$$.cod = $1.cod + $2.cod;
 					}
 
  				| 	_int 
@@ -37,20 +47,20 @@
 					_pard 
 					Bloque
 					{
-						$$.cod = "define i32 main()" + $5.cod;
+						$$.cod = "define i32 main()\n" + $5.cod;
 					}
 				;
 
 	Tipo 		: 	_int
 					{
 						$$.cod = "i32";
-						fprintf(stderr, "{Tipo-1} : %s\n", $$.cod.c_str());
+						fprintf(stderr, "{Tipo-1} : \"%s\"\n", $$.cod.c_str());
 					}
 
  				| 	_float
 					{
 						$$.cod = "float";
-						fprintf(stderr, "{Tipo-2} : %s\n", $$.cod.c_str());
+						fprintf(stderr, "{Tipo-2} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -63,10 +73,13 @@
 					}
 				;
 
-	BDecl 		: 	BDecl 
+	BDecl 		: 	BDecl
+					{
+						$$.type = DVAR_LOCATION::in_function;
+					}
 					DVar
 					{
-						$$.cod = $1.cod + $2.cod;
+						$$.cod = $1.cod + $3.cod;
 					}
 
 		 		| 	%empty
@@ -76,39 +89,56 @@
 				;
 
 	DVar 		: 	Tipo
+					{
+						$$.type = $0.type; 	// DVAR_LOCATION
+						$$.cod = $1.cod; 	// tipo int, float
+					}
 					LIdent 
 					_pyc
 					{
-						$$.cod = $2.cod;
-						fprintf(stderr, "{DVar} : %s\n", $$.cod.c_str());
+						$$.cod = $3.cod;
+						fprintf(stderr, "{DVar} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
 	LIdent 		: 	LIdent
 					_coma
 					{
-						$$.cod = $-0.cod; // tipo
-						//fprintf(stderr, "LIdent-1 refs -1 : \"%s\"\n", $0.cod.c_str());
+						$$.type = $0.type; 	// DVAR_LOCATION
+						$$.cod = $-1.cod; 	// tipo int, float
 					}
 					Variable
 					{
-						$$.cod = $4.cod;
-						fprintf(stderr, "{LIdent-1} : %s\n", $$.cod.c_str());
+						$$.cod = $1.cod + $4.cod;
+						fprintf(stderr, "{LIdent-1} : \"%s\"\n", $$.cod.c_str());
 					}
 	
 	 			| 	Variable
 					{
 						$$.cod = $1.cod;
-						fprintf(stderr, "{LIdent-2} : %s\n", $$.cod.c_str());
+						fprintf(stderr, "{LIdent-2} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
 	Variable 	: 	_id
 					V
 					{
-						$$.cod 	= "%" + $1.lex + " = alloca " + $-0.cod + "\n" + $1.cod; 
+						if( $0.type == DVAR_LOCATION::in_function )
+						{
+							$$.cod = "%" + $1.lex + " = alloca " + $0.cod + "\n" + $2.cod;
+						}
 
-						fprintf(stderr, "{Variable} : %s\n", $$.cod.c_str());
+						else if( $0.type == DVAR_LOCATION::out_function ) // global variables
+						{
+							$$.cod = "@" + $1.lex + " = private global " + $0.cod + "\n" + $2.cod;
+						}
+						else
+						{
+							fprintf(stderr, "Variable found an impossible DVAR_LOCATION value (%d). Please contact the police.\n", $0.type);
+							exit(-1);
+						}
+
+						fprintf(stderr, "{Variable} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 

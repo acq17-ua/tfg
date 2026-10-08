@@ -1,0 +1,6 @@
+int A;
+
+int main()
+{
+	int a, b, c;
+}
