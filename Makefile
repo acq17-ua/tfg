@@ -1,5 +1,5 @@
 OPTS=-Wall -g -Wno-write-strings -Wno-unused-function -Wno-sign-compare -std=c++11 -Wno-free-nonheap-object
-OBJS=lex.yy.o tfg.tab.o #TablaSimbolos.o TablaTipos.o VariablesMemoria.o
+OBJS=lex.yy.o tfg.tab.o SymbolTable.o #TablaTipos.o VariablesMemoria.o
 CC=g++
 TAR = tar -cvzf
 
@@ -12,8 +12,8 @@ lex.yy.o: lex.yy.c comun.h tfg.tab.h
 tfg.tab.o: tfg.tab.c lex.yy.c comun.h
 	$(CC) $(OPTS) -c tfg.tab.c
 
-#TablaSimbolos.o: TablaSimbolos.cc TablaSimbolos.h
-#	$(CC) $(OPTS) -c TablaSimbolos.cc
+SymbolTable.o: SymbolTable.cc SymbolTable.h
+	$(CC) $(OPTS) -c SymbolTable.cc
 
 #TablaTipos.o: TablaTipos.cc TablaTipos.h TablaSimbolos.h 
 #	$(CC) $(OPTS) -c TablaTipos.cc
@@ -23,7 +23,7 @@ tfg.tab.o: tfg.tab.c lex.yy.c comun.h
 lex.yy.c : tfg.l comun.h
 	flex tfg.l
 	
-tfg.tab.c tfg.tab.h: tfg.y lex.yy.c comun.h #TablaSimbolos.h TablaTipos.h VariablesMemoria.h
+tfg.tab.c tfg.tab.h: tfg.y lex.yy.c comun.h SymbolTable.h # TablaTipos.h VariablesMemoria.h
 	bison -d -Wcounterexamples tfg.y	
 
 entrega:
