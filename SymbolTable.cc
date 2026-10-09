@@ -12,18 +12,9 @@ SymbolTable::SymbolTable(SymbolTable* pa)
 
 bool SymbolTable::set(const Symbol s)
 {
-	
-	SymbolTable* it = parent;
-
 	if( this->scope_syms.count(s) )
 		return false;
 
-	while( it )
-	{
-		if( it->scope_syms.count(s) ) 		
-			return false;
-		it = it->parent;
-	}
 	this->scope_syms.insert(s);
 	return true;
 }
