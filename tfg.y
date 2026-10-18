@@ -8,6 +8,7 @@
 
 %{
 	#include "comun.h"
+	#include "SymbolTable.h"
 
 	int yyerror(char* s);
 	extern int col, row, eof;
@@ -16,60 +17,83 @@
 	extern char* yytext;
 	extern FILE* yyin;
 
+	bool dbg_lex=false, dbg_sem=false, dbg_sym=false;
+
 	enum DVAR_LOCATION
 	{
 		out_function,
 		in_function
 	};
 
+	SymbolTable tsym(nullptr);
+
 %}
 
 %%
 	S 			: 	{
 						$$.type = DVAR_LOCATION::out_function;
+						$$.prefix = "";
 					}
 					FVM
 					{
 						$$.cod = $2.cod;
+
 						fprintf(stderr, "\n--------\nTRANSLATION\n--------\n%s", $$.cod.c_str());
 					}
 				;
 
-	FVM 		: 	DVar 
+	FVM 		: 	DVar
+					{
+						$$.prefix = $0.prefix;
+					}
 					FVM
 					{
-						$$.cod = $1.cod + $2.cod;
+						$$.cod = $1.cod + $3.cod;
+
+						if( dbg_sem )
+							fprintf(stderr, "{FVM} : \"%s\"\n", $$.cod.c_str());
 					}
 
  				| 	_int 
 					_main 
 					_pari 
 					_pard 
+					{
+						$$.prefix = $0.prefix + "main";
+					}
 					Bloque
 					{
-						$$.cod = "define i32 main()\n" + $5.cod;
+						$$.cod = "define i32 main()\n" + $6.cod;
 					}
 				;
 
 	Tipo 		: 	_int
 					{
 						$$.cod = "i32";
-						fprintf(stderr, "{Tipo-1} : \"%s\"\n", $$.cod.c_str());
+						if( dbg_sem )
+							fprintf(stderr, "{Tipo-1} : \"%s\"\n", $$.cod.c_str());
 					}
 
  				| 	_float
 					{
 						$$.cod = "float";
-						fprintf(stderr, "{Tipo-2} : \"%s\"\n", $$.cod.c_str());
+						if( dbg_sem )
+							fprintf(stderr, "{Tipo-2} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
-	Bloque 		: 	_llavei 
-					BDecl 
+	Bloque 		: 	_llavei
+					{
+						tsym = SymbolTable(&tsym);
+						$$.prefix = $0.prefix;
+					}
+					BDecl
 					SeqInstr 
 					_llaved
 					{
-						$$.cod = "{\n" + $1.cod + $2.cod + "\n}\n";
+						$$.cod = "{\n" + $1.cod + $3.cod + "\n}\n";
+						if( dbg_sem )
+							fprintf(stderr, "{Bloque} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -80,11 +104,17 @@
 					DVar
 					{
 						$$.cod = $1.cod + $3.cod;
+
+						if( dbg_sem )
+							fprintf(stderr, "{BDecl} : \"%s\"\n", $$.cod.c_str());
+						
 					}
 
 		 		| 	%empty
 					{
 						$$.cod = "";
+						if( dbg_sem )
+							fprintf(stderr, "{BDecl-empty} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -97,7 +127,8 @@
 					_pyc
 					{
 						$$.cod = $3.cod;
-						fprintf(stderr, "{DVar} : \"%s\"\n", $$.cod.c_str());
+						if(dbg_sem)
+							fprintf(stderr, "{DVar} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -110,13 +141,15 @@
 					Variable
 					{
 						$$.cod = $1.cod + $4.cod;
-						fprintf(stderr, "{LIdent-1} : \"%s\"\n", $$.cod.c_str());
+						if(dbg_sem)
+							fprintf(stderr, "{LIdent-1} : \"%s\"\n", $$.cod.c_str());
 					}
 	
 	 			| 	Variable
 					{
 						$$.cod = $1.cod;
-						fprintf(stderr, "{LIdent-2} : \"%s\"\n", $$.cod.c_str());
+						if(dbg_sem)
+							fprintf(stderr, "{LIdent-2} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -138,7 +171,8 @@
 							exit(-1);
 						}
 
-						fprintf(stderr, "{Variable} : \"%s\"\n", $$.cod.c_str());
+						if(dbg_sem)
+							fprintf(stderr, "{Variable} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
@@ -266,9 +300,20 @@ int yyerror(char *s)
 int main(int argc, char* argv[])
 {
 	FILE* fent;
-	
-	if( argc == 2 )
+
+	if( argc == 3 )
 	{
+		// 0 is '-'
+		for( int i=1; i<strlen(argv[2]); i++ )
+		{
+			if( argv[2][i] == 'l' ) 	dbg_lex = true;
+			if( argv[2][i] == 'm' ) 	dbg_sem = true;
+			if( argv[2][i] == 's' ) 	dbg_sym = true;
+		}
+	}
+
+	if( argc == 2 || argc == 3 ) {
+
 		fent = fopen(argv[1], "rt");
 		if(fent)
 		{
@@ -280,7 +325,8 @@ int main(int argc, char* argv[])
 			fprintf(stderr, "No puedo abrir el fichero\n");
 
 	}
+
 	else
-		fprintf(stderr, "Uso: ejemplo <nombre de fichero>\n");
+		fprintf(stderr, "Uso: ejemplo <nombre de fichero> --opts(lms)\n");
 }
 

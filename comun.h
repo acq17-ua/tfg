@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <cstring>
 using namespace std;
@@ -22,6 +23,7 @@ enum ERR
 
 typedef struct {
 	string lex;
+	string prefix;
 	unsigned type;
 	unsigned th;
     string cod;
@@ -32,8 +34,7 @@ typedef struct {
 
 #define YYSTYPE TOKEN
 
+extern bool dbg_lex, dbg_sem, dbg_sym;
+
 void msgError(const ERR, const TOKEN*);
 void msgError(const ERR, const unsigned, const unsigned, const string);
-
-
-

@@ -7,6 +7,7 @@ LD 	[0-9a-zA-Z]
 	#include "tfg.tab.h"
 
 	int col=1, row=1, eof=0;
+	extern bool dbg_lex;
 
 	// Update col/row, return token
 	int ret(int token, string s="");
@@ -80,7 +81,8 @@ int ret(int token, string s)
 	col += (strlen(yytext));
 	yylval.cod = s;
 
-	cout << "  |  " << token_types[token-(int)_main] << " - \"" << yylval.lex << "\" (" << yylval.row << "," << yylval.col << ")\n";
+	if(dbg_lex)
+		cout << "  |  " << token_types[token-(int)_main] << " - \"" << yylval.lex << "\" (" << yylval.row << "," << yylval.col << ")\n";
 
 	return token;
 }
