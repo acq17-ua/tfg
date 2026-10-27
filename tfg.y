@@ -63,7 +63,7 @@
 					_pari 
 					_pard 
 					{
-						$$.prefix = $0.prefix + "main";
+						$$.prefix = $0.prefix + "main_";
 					}
 					Bloque
 					{
@@ -180,9 +180,9 @@
 					{
 						if( $0.addr == DVAR_LOCATION::in_function )
 						{
-							$$.cod = "%" + $1.lex + " = alloca " + $0.cod + "\n" + $2.cod;
+							Symbol s($1.lex, "%"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
+							$$.cod = s.trans + " = alloca " + $0.cod + "\n" + $2.cod;
 
-							Symbol s($1.lex, "@"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
 
 							if( !tsym.set( s ) ) 
 							{
@@ -193,9 +193,9 @@
 
 						else if( $0.addr == DVAR_LOCATION::out_function ) // global variables
 						{
-							$$.cod = "@" + $1.lex + " = private global " + $0.cod + "\n" + $2.cod;
+							Symbol s($1.lex, "@"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
+							$$.cod = s.trans + " = private global " + $0.cod + "\n" + $2.cod;
 							
-							Symbol s($1.lex, "%"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
 
 							if( !tsym.set( s ) ) 
 							{
