@@ -28,7 +28,7 @@ enum ERR
 typedef struct {
 	string lex;
 	string prefix;
-	TType type;
+	unsigned type;
 	unsigned th;
     string cod;
     unsigned addr;

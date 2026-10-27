@@ -1,5 +1,5 @@
 OPTS=-Wall -g -Wno-write-strings -Wno-unused-function -Wno-sign-compare -std=c++11 -Wno-free-nonheap-object
-OBJS=lex.yy.o tfg.tab.o SymbolTable.o #TablaTipos.o VariablesMemoria.o
+OBJS=lex.yy.o tfg.tab.o SymbolTable.o TypeTable.o # VariablesMemoria.o
 CC=g++
 TAR = tar -cvzf
 
@@ -14,6 +14,9 @@ tfg.tab.o: tfg.tab.c lex.yy.c comun.h
 
 SymbolTable.o: SymbolTable.cc SymbolTable.h
 	$(CC) $(OPTS) -c SymbolTable.cc
+
+TypeTable.o: TypeTable.cc TypeTable.h
+	$(CC) $(OPTS) -c TypeTable.cc
 
 #TablaTipos.o: TablaTipos.cc TablaTipos.h TablaSimbolos.h 
 #	$(CC) $(OPTS) -c TablaTipos.cc

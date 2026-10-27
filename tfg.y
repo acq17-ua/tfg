@@ -29,6 +29,8 @@
 	SymbolTable temp(nullptr);
 	unsigned nextTemp = 1;
 
+	TypeTable ttypes;
+
 %}
 
 %%
@@ -176,23 +178,30 @@
 	Variable 	: 	_id
 					V
 					{
-						Symbol s($1.lex, $1.lex+$0.prefix, $0.type, nextAddr++, 1);
-						
-						if( !tsym.set(s) )
-						{
-							msgError(ERR::YADECL, &$1);
-							exit(-1);
-						}
-
-
 						if( $0.addr == DVAR_LOCATION::in_function )
 						{
 							$$.cod = "%" + $1.lex + " = alloca " + $0.cod + "\n" + $2.cod;
+
+							Symbol s($1.lex, "@"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
+
+							if( !tsym.set( s ) ) 
+							{
+								msgError(ERR::YADECL, &$1);
+								exit(-1);
+							}
 						}
 
 						else if( $0.addr == DVAR_LOCATION::out_function ) // global variables
 						{
 							$$.cod = "@" + $1.lex + " = private global " + $0.cod + "\n" + $2.cod;
+							
+							Symbol s($1.lex, "%"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
+
+							if( !tsym.set( s ) ) 
+							{
+								msgError(ERR::YADECL, &$1);
+								exit(-1);
+							}
 						}
 						else
 						{
@@ -304,15 +313,23 @@
 
 	Ref 		: 	_id
 					{
-						if ( !tsym.get( $1.lex ) )
+						const Symbol* s = tsym.get($1.lex);
+						
+						if ( !s )
 						{
 							msgError(ERR::NODECL, &$1);
 							exit(-1);
 						}
+
+						$0.type = s->type;
+						$0.cod  = s->trans;
 					}
 
 				| 	Ref
 					_cori
+					{
+						
+					}
 					Esimple
 					_cord
 				;

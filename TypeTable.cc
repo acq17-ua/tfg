@@ -3,7 +3,19 @@
 TypeTable::TypeTable()
 {
 	// int
-	this->types.push_back( TType(false, 1, 0) );
+	this->t.push_back( TType{false, 1, 0} );
 	// float
-	this->types.push_back( TType(false, 1, 1) );
+	this->t.push_back( TType{false, 1, 1} );
+}
+
+unsigned TypeTable::create(const unsigned size, const unsigned subType)
+{
+	TType newtype{true, size, subType};
+	this->t.push_back(newtype);
+	return this->t.size()-1;
+}
+
+unsigned TypeTable::size(const unsigned id) const
+{
+	return this->t.at(id).size;
 }
