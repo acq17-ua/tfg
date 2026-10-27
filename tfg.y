@@ -8,7 +8,6 @@
 
 %{
 	#include "comun.h"
-	#include "SymbolTable.h"
 
 	int yyerror(char* s);
 	extern int col, row, eof;
@@ -26,12 +25,15 @@
 	};
 
 	SymbolTable tsym(nullptr);
+	unsigned nextAddr = 1;
+	SymbolTable temp(nullptr);
+	unsigned nextTemp = 1;
 
 %}
 
 %%
 	S 			: 	{
-						$$.type = DVAR_LOCATION::out_function;
+						$$.addr = DVAR_LOCATION::out_function;
 						$$.prefix = "";
 					}
 					FVM
@@ -51,7 +53,7 @@
 						$$.cod = $1.cod + $3.cod;
 
 						if( dbg_sem )
-							fprintf(stderr, "{FVM} : \"%s\"\n", $$.cod.c_str());
+							fprintf(stderr, "{FVM-1} : \"%s\"\n", $$.cod.c_str());
 					}
 
  				| 	_int 
@@ -64,12 +66,16 @@
 					Bloque
 					{
 						$$.cod = "define i32 main()\n" + $6.cod;
+
+						if( dbg_sem )
+							fprintf(stderr, "{FVM-2} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
 	Tipo 		: 	_int
 					{
 						$$.cod = "i32";
+						$$.type = INT;
 						if( dbg_sem )
 							fprintf(stderr, "{Tipo-1} : \"%s\"\n", $$.cod.c_str());
 					}
@@ -77,6 +83,7 @@
  				| 	_float
 					{
 						$$.cod = "float";
+						$$.type = FLOAT;
 						if( dbg_sem )
 							fprintf(stderr, "{Tipo-2} : \"%s\"\n", $$.cod.c_str());
 					}
@@ -84,14 +91,23 @@
 
 	Bloque 		: 	_llavei
 					{
+						/*
+						OPEN SCOPE
+						*/
 						tsym = SymbolTable(&tsym);
-						$$.prefix = $0.prefix;
+						$$.prefix = $0.prefix; // para BDecl
 					}
 					BDecl
 					SeqInstr 
 					_llaved
 					{
-						$$.cod = "{\n" + $1.cod + $3.cod + "\n}\n";
+						/*
+						CLOSE SCOPE
+						*/
+						nextAddr = (unsigned)tsym.start_addr;
+						tsym = *(tsym.parent);
+	
+						$$.cod = "{\n" + $3.cod + $5.cod + "\n}\n";
 						if( dbg_sem )
 							fprintf(stderr, "{Bloque} : \"%s\"\n", $$.cod.c_str());
 					}
@@ -99,7 +115,8 @@
 
 	BDecl 		: 	BDecl
 					{
-						$$.type = DVAR_LOCATION::in_function;
+						$$.addr = DVAR_LOCATION::in_function;
+						$$.prefix = $0.prefix;
 					}
 					DVar
 					{
@@ -120,8 +137,10 @@
 
 	DVar 		: 	Tipo
 					{
-						$$.type = $0.type; 	// DVAR_LOCATION
+						$$.addr = $0.addr; 	// DVAR_LOCATION
 						$$.cod = $1.cod; 	// tipo int, float
+						$$.type = $1.type; 	// i32 float
+						$$.prefix = $0.prefix;
 					}
 					LIdent 
 					_pyc
@@ -135,8 +154,9 @@
 	LIdent 		: 	LIdent
 					_coma
 					{
-						$$.type = $0.type; 	// DVAR_LOCATION
+						$$.addr = $0.addr; 	// DVAR_LOCATION
 						$$.cod = $-1.cod; 	// tipo int, float
+						$$.prefix = $0.prefix;
 					}
 					Variable
 					{
@@ -156,20 +176,30 @@
 	Variable 	: 	_id
 					V
 					{
-						if( $0.type == DVAR_LOCATION::in_function )
+						Symbol s($1.lex, $1.lex+$0.prefix, $0.type, nextAddr++, 1);
+						
+						if( !tsym.set(s) )
+						{
+							msgError(ERR::YADECL, &$1);
+							exit(-1);
+						}
+
+
+						if( $0.addr == DVAR_LOCATION::in_function )
 						{
 							$$.cod = "%" + $1.lex + " = alloca " + $0.cod + "\n" + $2.cod;
 						}
 
-						else if( $0.type == DVAR_LOCATION::out_function ) // global variables
+						else if( $0.addr == DVAR_LOCATION::out_function ) // global variables
 						{
 							$$.cod = "@" + $1.lex + " = private global " + $0.cod + "\n" + $2.cod;
 						}
 						else
 						{
-							fprintf(stderr, "Variable found an impossible DVAR_LOCATION value (%d). Please contact the police.\n", $0.type);
+							fprintf(stderr, "Variable found an impossible DVAR_LOCATION value (%d). Please contact the police.\n", $0.addr);
 							exit(-1);
 						}
+
 
 						if(dbg_sem)
 							fprintf(stderr, "{Variable} : \"%s\"\n", $$.cod.c_str());
@@ -273,6 +303,14 @@
 				;
 
 	Ref 		: 	_id
+					{
+						if ( !tsym.get( $1.lex ) )
+						{
+							msgError(ERR::NODECL, &$1);
+							exit(-1);
+						}
+					}
+
 				| 	Ref
 					_cori
 					Esimple

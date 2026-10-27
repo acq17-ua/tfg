@@ -1,4 +1,8 @@
 #pragma once
+
+#include "SymbolTable.h"
+#include "TypeTable.h"
+
 #include <iostream>
 #include <cstring>
 using namespace std;
@@ -24,7 +28,7 @@ enum ERR
 typedef struct {
 	string lex;
 	string prefix;
-	unsigned type;
+	TType type;
 	unsigned th;
     string cod;
     unsigned addr;
