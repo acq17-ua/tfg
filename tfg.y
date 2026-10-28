@@ -208,7 +208,17 @@
 										nextAddr++,
 										ttypes.t.at($3.type).size);
 
-							$$.cod = s.trans + " = private global " + $3.cod + "\n";
+							$$.cod = s.trans + " = private global " + $3.cod;
+
+							
+	
+							if( ! ttypes.t.at($3.type).array ) 		
+								$$.cod += " 0\n";
+							
+							else 	
+								$$.cod += " zeroinitializer\n";
+
+
 
 							if( !tsym.set( s ) )
 							{
