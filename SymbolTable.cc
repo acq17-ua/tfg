@@ -32,7 +32,7 @@ bool SymbolTable::set(const Symbol s)
 
 const Symbol* SymbolTable::get(const string q) 
 {
-	const Symbol s(q, "", INT, 0, 0);
+	const Symbol s(q, "", 0, 0, 0);
 
 	SymbolTable* it = this;
 	unordered_set<Symbol>::iterator found;

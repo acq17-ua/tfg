@@ -140,8 +140,8 @@
 	DVar 		: 	Tipo
 					{
 						$$.addr = $0.addr; 	// DVAR_LOCATION
-						$$.cod = $1.cod; 	// tipo int, float
-						$$.type = $1.type; 	// i32 float
+						$$.th = $1.th; 		// tipo int, float
+						$$.cod = $1.cod; 	// "i32" "float"
 						$$.prefix = $0.prefix;
 					}
 					LIdent 
@@ -157,7 +157,8 @@
 					_coma
 					{
 						$$.addr = $0.addr; 	// DVAR_LOCATION
-						$$.cod = $-1.cod; 	// tipo int, float
+						$$.th = $0.th; 		// tipo int, float
+						$$.cod = $-1.cod; 	// "i32" "float"
 						$$.prefix = $0.prefix;
 					}
 					Variable
@@ -176,13 +177,21 @@
 				;
 
 	Variable 	: 	_id
+					{
+						$$.th = $0.th;		// tipo int, float
+						$$.cod = $0.cod; 	// "i32" "float"
+					}
 					V
 					{
 						if( $0.addr == DVAR_LOCATION::in_function )
 						{
-							Symbol s($1.lex, "%"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
-							$$.cod = s.trans + " = alloca " + $0.cod + "\n" + $2.cod;
+							Symbol s( 	$1.lex,
+										"%" + $0.prefix + $1.lex,
+										$3.type,
+										nextAddr++,
+										ttypes.t.at($3.type).size);
 
+							$$.cod = s.trans + " = alloca " + $3.cod + "\n";
 
 							if( !tsym.set( s ) ) 
 							{
@@ -191,13 +200,17 @@
 							}
 						}
 
-						else if( $0.addr == DVAR_LOCATION::out_function ) // global variables
+						else if( $0.addr == DVAR_LOCATION::out_function )
 						{
-							Symbol s($1.lex, "@"+$0.prefix+$1.lex, $0.type, nextAddr++, ttypes.size($0.type));
-							$$.cod = s.trans + " = private global " + $0.cod + "\n" + $2.cod;
-							
+							Symbol s( 	$1.lex,
+										"@" + $0.prefix + $1.lex,
+										$3.type,
+										nextAddr++,
+										ttypes.t.at($3.type).size);
 
-							if( !tsym.set( s ) ) 
+							$$.cod = s.trans + " = private global " + $3.cod + "\n";
+
+							if( !tsym.set( s ) )
 							{
 								msgError(ERR::YADECL, &$1);
 								exit(-1);
@@ -217,13 +230,38 @@
 
 	V 			: 	%empty
 					{
-						$$.cod = "";
+						$$.type = $0.th; // tipo int, float
+						$$.cod = $0.cod; // "i32" "float"
+
+						if(dbg_sem)
+							fprintf(stderr, "{V-empty} : \"%s\"\n", $$.cod.c_str());
 					}
 				
 				| 	_cori
 					_nentero
 					_cord
+					{
+						int dim = atoi(($2.lex).c_str());
+						if( dim < 1 )
+						{
+							msgError(ERR::DIM, &$2);
+							exit(-1);
+						}
+
+						$$.cod = $0.cod;
+
+						// add self to type, then send down
+						$$.th = ttypes.create(dim * (ttypes.t.at($0.th).size), $0.th);
+					}
 					V
+					{
+						// pass final type back up
+						$$.type = $5.type;
+						$$.cod = "[" + $2.lex + " x " + $5.cod + "]";
+
+						if(dbg_sem)
+							fprintf(stderr, "{V} : \"%s\"\n", $$.cod.c_str());
+					}
 				;
 
 	SeqInstr 	: 	SeqInstr
@@ -328,10 +366,26 @@
 				| 	Ref
 					_cori
 					{
-						
+						if( !ttypes.t.at($1.type).array )
+						{
+							msgError(ERR::TOOMANY, &$2);
+							exit(-1);
+						}
+
 					}
 					Esimple
 					_cord
+					{
+						$$.type = ttypes.t.at($1.type).subType;
+						
+						if( ttypes.t.at($$.type).array )
+						{
+							msgError(ERR::TOOFEW, &$5);
+							exit(-1);
+						}
+
+						$$.cod =  ""/**/;
+					}
 				;
 
 %%

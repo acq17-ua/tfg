@@ -14,8 +14,3 @@ unsigned TypeTable::create(const unsigned size, const unsigned subType)
 	this->t.push_back(newtype);
 	return this->t.size()-1;
 }
-
-unsigned TypeTable::size(const unsigned id) const
-{
-	return this->t.at(id).size;
-}

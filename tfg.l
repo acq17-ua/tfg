@@ -130,7 +130,8 @@ void msgError(const ERR nerror, const unsigned row, const unsigned col, const st
 			break;
 
 		case ERR::DIM:
-			fprintf(stderr, "Array access requires a positive index.\n");
+			fprintf(stderr, "Array dimensions require a positive index (given %s).\n",
+					lex.c_str());
 			break;
 
 		case ERR::OUTOFMEMORY:
