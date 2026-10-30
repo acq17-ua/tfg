@@ -14,3 +14,12 @@ unsigned TypeTable::create(const unsigned size, const unsigned subType)
 	this->t.push_back(newtype);
 	return this->t.size()-1;
 }
+
+bool TypeTable::addSignature(const unsigned id, const string sign)
+{
+	if( id < this->t.size() )
+		return false;
+
+	this->t.at(id).signature = sign;
+	return true;
+}

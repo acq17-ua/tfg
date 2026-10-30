@@ -183,6 +183,9 @@
 					}
 					V
 					{
+						// save "[1 x [2 x ... i32]...]]" or "i32" of non array, for references
+						ttypes.t.at($3.type).signature = $3.cod;
+
 						if( $0.addr == DVAR_LOCATION::in_function )
 						{
 							Symbol s( 	$1.lex,
@@ -193,7 +196,7 @@
 
 							$$.cod = s.trans + " = alloca " + $3.cod + "\n";
 
-							if( !tsym.set( s ) ) 
+							if( !tsym.set(s) ) 
 							{
 								msgError(ERR::YADECL, &$1);
 								exit(-1);
@@ -209,8 +212,6 @@
 										ttypes.t.at($3.type).size);
 
 							$$.cod = s.trans + " = private global " + $3.cod;
-
-							
 	
 							if( ! ttypes.t.at($3.type).array ) 		
 								$$.cod += " 0\n";
@@ -218,9 +219,7 @@
 							else 	
 								$$.cod += " zeroinitializer\n";
 
-
-
-							if( !tsym.set( s ) )
+							if( !tsym.set(s) )
 							{
 								msgError(ERR::YADECL, &$1);
 								exit(-1);
@@ -258,7 +257,7 @@
 							exit(-1);
 						}
 
-						$$.cod = $0.cod;
+						$$.cod = $0.cod; // "i32" "float"
 
 						// add self to type, then send down
 						$$.th = ttypes.create(dim * (ttypes.t.at($0.th).size), $0.th);
@@ -268,6 +267,8 @@
 						// pass final type back up
 						$$.type = $5.type;
 						$$.cod = "[" + $2.lex + " x " + $5.cod + "]";
+
+						ttypes.addSignature($4.th, $$.cod);
 
 						if(dbg_sem)
 							fprintf(stderr, "{V} : \"%s\"\n", $$.cod.c_str());
@@ -348,10 +349,28 @@
 				;
 
 	Factor		: 	Ref
+					{
+						if( ttypes.t.at($1.type).array ) 
+						{
+							msgError(ERR::TOOFEW, &yylval);
+						}
+					}
 				
 				| 	_nentero
+					{
+						$$.cod = $1.lex;
+
+						if( dbg_sem )
+							fprintf(stderr, "{F n-entero} : \"%s\"\n", $$.cod.c_str());
+					}
 
 				| 	_nreal
+					{
+						$$.cod = $1.lex;
+
+						if( dbg_sem )
+							fprintf(stderr, "{F n-real} : \"%s\"\n", $$.cod.c_str());
+					}
 
 				| 	_pari
 					Expr
@@ -369,8 +388,26 @@
 							exit(-1);
 						}
 
-						$0.type = s->type;
-						$0.cod  = s->trans;
+						$$.type = s->type;
+
+						/* Type signature that LLVM always needs before a register name
+							i32
+							[2 x i32]
+							[3 x [2 x i32]]
+						*/
+						$$.prefix = ttypes.t.at(s->type).signature;
+
+						/* Register name
+							%1
+							%myvar
+							@abc
+							
+							We save it in .lex to leave .cod free 
+						*/
+						$$.lex = s->trans;
+
+						if( dbg_sem )
+							fprintf(stderr, "{Ref end} : \"%s\"\n", $$.lex.c_str());
 					}
 
 				| 	Ref
@@ -381,20 +418,34 @@
 							msgError(ERR::TOOMANY, &$2);
 							exit(-1);
 						}
-
 					}
 					Esimple
 					_cord
 					{
 						$$.type = ttypes.t.at($1.type).subType;
-						
+							
+						/*
 						if( ttypes.t.at($$.type).array )
 						{
 							msgError(ERR::TOOFEW, &$5);
 							exit(-1);
 						}
+						No, hay que comprobar esto despues de Ref as a whole, no aqui dentro, 
+						porque esto se va a ejecutar varias veces. Siempre va a dar TOOFEW.
+						*/
 
-						$$.cod =  ""/**/;
+						// Register name
+						$$.lex = $1.lex;
+
+						// Esimple operations
+						$$.cod = $4.prefix;
+						
+						// getelementptr... Esimple signature + full_name
+						$$.cod += $1.cod + "\n";
+						$$.cod += "getelementptr " + $1.prefix + ", " + $1.prefix + "* " + $$.lex + ", i64 0 i64 " + $4.cod + "\n";
+
+						if( dbg_sem )
+							fprintf(stderr, "{Ref rec} : \"%s\"\n", $$.cod.c_str());
 					}
 				;
 
